@@ -1,0 +1,149 @@
+use mydb;
+select A.empno, A.ename, A.deptno, B.dname, A.hiredate, A.sal from emp A
+left outer join dept B on A.deptno=B.deptno;
+
+create view v_emp as
+    select A.empno, A.ename, A.deptno, B.dname, A.hiredate, A.sal from emp A
+    left outer join dept B on A.deptno=B.deptno;
+
+--우리나라에서는 현재 뷰를 안만들고 아래와 같이 한다
+select * from(
+    select A.empno, A.ename, A.deptno, B.dname, A.hiredate, A.sal from emp A
+    left outer join dept B on A.deptno=B.deptno
+)A;
+
+select * from v_emp;
+select * from v_emp where deptno=10;
+select deptno, count(*) cnt from v_emp group by deptno;
+
+grant all mydb.* to user01@localhost identified by 패스워드
+계정 - root 테이블을 막 만든다, 뷰도 만든다
+
+삭제-drop view v_emp;
+이미 존재하고 있을 수 있기 때문에 
+create or replace view v_emp as
+    select A.empno, A.ename, A.deptno, B.dname, A.hiredate hdate, A.sal MonthPay, A.sal*12 YearPay
+    from emp A
+    left outer join dept B on A.deptno=B.deptno;
+
+무료호스팅 업체(서버) - GIT, firebase(구글), 애니웨어(파이썬)
+유료호스팅 업체(서버) - cafe24, 후이즈
+도메인(유료)
+phpmysql - 웹을 이용해서 mysql 접근 툴
+
+use sqldb;
+create view v_userbuytbl
+as
+    select A.userid `USER ID`, A.name `USER NAME`, B.prodname `product name`,
+    A.addr, concat(A.mobile1, A.mobile2) `mobile phone`
+    from usertbl A
+    inner join buytbl B
+    on A.userid=B.userid;
+
+select `USER ID`, `USER NAME` from v_userbuytbl;
+
+Alter view v_userbuytbl
+as
+    select A.userid `사용자 아이디`, A.name `이름`, B.prodname `제품 이름`,
+    A.addr, concat(A.mobile1, A.mobile2) `전화번호`
+    from usertbl A
+    inner join buytbl B
+    on A.userid=B.userid;
+
+select `이름`, `전화번호` from v_userbuytbl;
+
+drop view v_userbuytbl;
+
+create or replace view v_usertbl
+as
+select userid, name, addr from usertbl;
+
+describe v_usertbl;
+
+--뷰에 데이터 넣기
+--뷰가 두개 이상인 테이블을 joiin해 올때는 insert가 안됨(dml이 안먹음)
+insert into v_userbuytbl (`USER ID`, `USER NAME`, addr)
+values('aaa', '홍길동', '광주');
+
+--실제원테이블 확인
+select * from usertbl;
+
+만약에 뷰에서 실제테이블을 안보여줘서 not null 조건이 있는 필드를 못본다면 insert못함
+dbms 에 따라서 뷰에 insert를 default로 막는 경우도 있다
+
+create view v_usertbl
+as select userid, name, addr from usertbl;
+
+insert into v_usertbl (`userid`, `name`, addr)
+values('aaa', '홍길동', '광주');
+
+
+select * from usertbl;
+
+show variables like 'innodb_data_file_path';
+show variables like 'innodb_file_per_table';
+
+--새로운 테이블 스페이스 만들기(확장자는 바꿀 수 없다)
+create tablespace ts_a add datafile ts_a.ibd;
+--MariaDB지원안함
+
+--데이터베이스에서 쿼리를 잘 만들어서 그 결과를 파이썬으로 끌고오는것이
+--파이썬에서 데이터베이스를 작성하는 것보다 속도가 더 빠르다
+
+--Index
+순차검색(선형검색, linear search): 처음부터 하나씩 읽어서 원하는 데이터 나올때까지
+                                 속도가 제일 느리다. n의 속도
+색인순차검색(ISAM): 색인표를 만들어서 처음 검색은 색인을 찾아서 색인 찾은 다음에는 순차검색으로 
+                   log N
+해쉬검색: 파이썬 dict 타입
+          해쉬함수를 이용해서 데이터를 이론상 한번에 검색한다
+--컴퓨터는 속도와 메모리가 반비례한다.
+
+-인데스를 만드는 것보다 쿼리를 잘 만들어서 가져오는 것을 공부하는 것이 훨씬 도움이 된다
+
+trade off: 적정선
+
+show databases;
+use information_schema;  --데이터베이스 사전
+show tables;
+
+desc tables;
+
+select table_schema, table_name, table_type from tables
+where table_schema='sqldb';
+
+--primary key삭제 후 검색
+use employees;
+alter table employees drop primary key;
+
+use information_schema;
+desc table_constraints;
+--테이블에 제약조건 있을 때 확인 명령어
+select * from table_constraints
+where table_name='employees';
+
+use employees;
+select constraint_name from information_schema.table_constraints
+where table_name='employees';
+
+select * from information_schema.table_constraints where table_schema='employees';
+
+--현재 나를 참조하는 테이블 확인 명령어
+select table_name, column_name, referenced_table_name, referenced_column_name
+from information_schema.key_column_usage
+where referenced_table_name='employees';
+
+---foreign key가 얽혀 있는 테이블 dept_emp
+alter table dept_emp drop foreign key dept_emp_ibfk_1;
+alter table dept_emp drop foreign key dept_emp_ibfk_2;
+alter table dept_manager drop foreign key dept_manager_ibfk_1;
+alter table salaries drop foreign key salaries_ibfk_1;
+alter table titles drop foreign key titles_ibfk_1;
+
+alter table employees drop primary key;
+select max(emp_no) from employees;
+select * from employees where emp_no=400000;
+
+
+---primary key를 다시 추가해보자 -자동인데스
+alter table employees add constraint pk_emp primary key(emp_no);

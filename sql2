@@ -1,0 +1,217 @@
+--usertbl의 데이터 조회
+SELECT * from usertbl;
+
+--usertbl에서 addr필드값이 서울인 사람만
+SELECT * from usertbl where addr='서울';
+
+--buttbl에서 num이 1인 데이터
+SELECT * from buytbl where num=1;
+--숫자인 데이터의 경우에는 ''를 해도 되고 안해도 된다
+--문자 데이터는 꼭 ''로 감싸야 한다
+SELECT * from usertbl where name='김경호';
+
+--관계연산자 > < == <= >= != <> 
+select userID, name from usertbl where birthyear>=1970 and height>=182;
+
+--1970년 이후에 태어났거나 키가 182인 사람
+select userID, name from usertbl where birthyear>=1970 or height>=182;
+
+--(1) buytbl에서 groupname이 전자이거나 서적인 경우의 num, prodName, price
+select num, prodName, price from buytbl where groupName='전자' or groupName='서적';
+
+--(2) usertbl에서 태어난 해가 1970년 미마인 사람들의 정보
+select * from usertbl where birthyear<1970;
+
+use employees;
+
+--(3) employees 테이블에서 last name 'Peac'이고 성별이 'M'이고 태어난 해가 1952년인 사람들 정보
+select * from employees where gender='M' and last_name='Peac' and substring(birth_date, 1, 4)='1952';
+ 
+--(4) employees 테이블에서 1953년도에 입사한 남자들 숫자
+select count(*) from employees where gender='M' and substring(hire_date, 1, 4)='1953';
+
+--(5) employees 테이블에서 1956년도에 입사한 여자들 숫자
+select count(*) from employees where gender='F' and substring(hire_date, 1, 4)='1956';
+
+use sqldb;
+
+--between 연산자 값을 포함한다
+select name, height from usertbl where height>=180 and height<=183;
+select name, height from usertbl where height between 180 and 183;
+
+--in
+select num, prodName, price from buytbl where groupName in('전자', '서적');
+select name, addr from usertbl where addr in ('서울', '경북', '전남');
+
+select * from buytbl where num in (1,3,5,9)
+
+use employees;
+select*from employees where emp_no in (10000,10001,10006,10010) or emp_no in (20000,20001, 20002);
+
+--like 연산자 와일드카드(_ , %)
+--언더바(_): 이 자리에 한글자가 어떤 글자든 상관없다
+select * from usertbl where name like '윤_신';
+--퍼센트(%): 여러개의 문자 (%%는 모든데이터)
+select * from usertbl where name like '김%';
+select * from usertbl where name like '이%';
+select * from usertbl where name like '%신%'; --이름에 '신'이 들어가는 사람
+
+--김경호의 키보다 큰사람, 1.김경호 키 2.김경호보다 큰 사람
+select height from usertbl where name='김경호';
+select name, height from usertbl where height>177;
+--2개의 쿼리를 결합
+--원쿼리에 덧붙임쿼리를 서브쿼리라고 함(서브쿼리가 먼저실행)
+--서브쿼리가 먼저 실행되고 그 결과를 가지고 메인 쿼리가 실행된다
+select name, height from usertbl where height>(select height from usertbl where name='김경호')
+
+--서브쿼리는 select, from, where에 각각 올 수 있다
+--select 문에서 사용될 때는 스칼라 서브쿼리라고 해서, 다른 테이블에서 데이터를 가져올 때 주로 쓴다
+--join 연산이나 함수를 대체할 수 있다
+--실행결과가 null이가나 하나 이하여야 한다. 절대 여러개의 결과가 오면 안된다
+--from 절에서 사용될 때는 가상뷰의 의미로 사용된다. 많이쓰임.
+------보통 서브쿼리의 실행결과가 여러개 오게 된다
+--where절: 실행결과값이 null이거나 하나일때와, 여러개일 때 각각 처리방법이 많이 다르다
+
+--error
+select name, height from usertbl where height>(select height from usertbl where addr='경남');
+--Subquery returns more than 1 row: 서브쿼리의 결과값이 하나 이상이어서 사용불가
+
+--170보다 크거나 173보다 큰 사람들
+select name, height from usertbl where height>ANY(select height from usertbl where addr='경남');
+
+--ANY : 부등호 or 부등호 or 부등호 or ...    -> 실무에서 min사용
+--in : 등호 or 등호 or 등호 or ....
+--all : 부등호 and 부등호 and 부등호 and ...    ->실무에서 max사용
+
+select name, height from usertbl where height>(select min(height) from usertbl where addr='경남');
+
+--select 절에 스칼라 서브쿼리
+--buytbl에는 구입한 사람 id 밖에 없음, 이름, 주소, 전화번호가 같이 출력되길 원함
+--'kbs'라는 아이디를 가지고 이름을 가져오자
+
+--이름, 주소등 가져올 필드가 많으면 성능이 떨어지기 때문에 join연산을 수행한다
+select num, prodName, price, amount, userid,(select name from usert bl where userid=buyTbl.userid)
+as name; (select name from usertbl where userid=buyTbl.userid) as addr from buyTbl;
+
+--각 사용자들이 얼마나 물건을 샀는지 확인하려고 한다
+select userid, name, addr,
+(select count(*) from buyTbl where userID=userTbl.userid) cnt from usertbl;
+
+
+--from 절의 경우 데이터개수가 많이 오는 서브쿼리
+use employees;
+
+select substring(birth_date, 1,4) birthYear, *from employees;
+--birth_date, 1,4를 birthYear로 봄(필드 추가)
+select * from
+(
+  select substring(birth_date, 1, 4) birthYear, emp_no, first_name, last_name, birth_date, gender, hire_date from employees where gender='M'
+)A where birthyear = '1964' and first_name like'p%';
+--from 절에 오는 쿼리에 대해서 인라인뷰라고 한다
+--A: ailasing -> 테이블명이나 컬럼에 새로운 이름을 부여한다
+select userid, name, addr, (select count(*) from buytbl a where a.userid=b.userid) cnt from usertbl b;
+
+use sqldb;
+
+select userid, name, addr,
+(select count(*) from buyTbl where userID=userTbl.userid) cnt from usertbl order by cnt;
+--order by cnt는 기본적으로 오름차순(작은것 부터 큰것 순서대로) default
+
+--카운트가 같을 때는 이름은 오름차순으로 정렬하라
+select userid, name, addr,
+(select count(*) from buyTbl where userID=userTbl.userid) cnt from usertbl order by cnt desc, name asc;
+--order by cnt desc는 내림차순
+
+select addr from usertbl;
+--중복된 값 배제
+select distinct addr from usertbl;
+
+select emp_no, hire_date from employees order by hire_date ASC limit 5,5;
+
+select emp_no, hire_date from employees order by hire_date ASC limit 0,10;
+
+select emp_no, hire_date from employees order by hire_date ASC limit 10,10;
+
+select emp_no, hire_date from employees order by hire_date ASC limit 20,10;
+
+
+create table user (select*from usertbl);
+create table user2 as select*from usertbl;
+show tables;
+select * from user;
+
+
+--구조만 복사하기
+create table user3 as select*from usertbl where 1=0;
+select count(*) from user3;
+
+
+--그룹함수 사용하기 -avg(평균), sum(합계), stdev(표준편차), max, min, count
+select sum(price), avg(price), max(price), min(price), count(price) from buytbl;
+
+--1.컬럼에 null값이 있을때는 계수를 못한다
+    null은 무정형, 모른다 수학적 무한대
+
+--필드에 auto_increment 속성이 있으면 반드시 이 필드가 primary keyrk 되어야 한다.
+(auto_increment은 mysql만 있다)
+
+create table WeekPay
+(id int not null auto_increment, name nvarchar(20) not null, week_time int,
+ per_pay int, primary key(id));
+
+insert into weekpay(name, week_time, per_pay) values ('이승기', 40, 20000);
+insert into weekpay(name, week_time, per_pay) values ('조용필', 30, 20000);
+insert into weekpay(name, week_time, per_pay) values ('김범수', 20, 20000);
+insert into weekpay(name, week_time, per_pay) values ('김경호', 40, 20000);
+insert into weekpay(name) values ('성시경');
+insert into weekpay(name, week_time, per_pay) values ('임재범', null, null);
+insert into weekpay(name, week_time, per_pay) values ('조관우', null, null);
+insert into weekpay(name, week_time, per_pay) values ('조승연', null, null);
+
+select id, name, week_time, per_pay, week_time*per_pay as pay from weekpay;
+
+--필드 추가
+alter table weekpay add column deptno char(2);
+update weekpay set deptno=10 where id in (1,3,4);
+update weekpay set deptno=20 where id not in (1,3,4);
+
+
+select sum(week_time) from weekpay;   -- null 값빼고 연산 수행됨
+
+select count(*) from weekpay;
+select max(week_time) from weekpay;   --dbms마다 null값 처리방식이 다르다
+select min(week_time) from weekpay;
+
+--그룹함수
+--내 개인 급여와 우리 부서의 최대급여를 비교
+내 이름 내 급여 부서평균급여
+select name, week_time*per_pay,avg(week_time*per_pay) from weekpay ;
+
+select name, deptno, week_time*per_pay,avg(week_time*per_pay) from weekpay group by deptno ;
+
+select name, week_time*per_pay, (select avg(week_time*per_pay)from weekpay) as average from weekpay;
+--오라클 윈도우함수를 avg(수식) over()
+
+select userid, sum(price*amount) from buytbl where sum(price*amount)>1000 group by userid;
+--where조건절에는 group함수를 쓸 수 없다
+select userid, sum(price*amount) from buytbl group by userid having sum(price*amount)>1000 ;
+
+select userid, price from (select userid, sum(price*amount) price from buytbl group by userid)A where price>1000;
+
+select num, groupName, sum(price*amount) as '비용' from buyTbl group by groupname, num with rollup;
+
+연습문제1.
+emp_no, first_name, last_name을 태어난 연도로 오름차순하여 5개만 출력하기
+select emp_no, first_name, last_name from employees order by birth_date ASC limit 0,5
+
+연습문제2.
+emp_no, first_name, last_name, title(현직, titles테이블에 있음)을 태어난 연도로 오름차순하여 5개만 출력하기
+
+select distinct emp_no, title from titles limit 10 ----2개 컬럼을 보니까 distinct못씀
+서브쿼리: select emp_no, title from titles where to_date='9999-01-01' limit 0,10;
+select emp_no, first_name, last_name, (select title from titles where to_date='9999-01-01' and titles.emp_no=employees.emp_no) '직위'
+from employees order by birth_date asc limit 0,5;
+
+select*from()
+select emp_no, first_name, last_name, (select title from titles where to_date='9999-01-01' and titles.emp_no=employees.emp_no) 
+title from employees  order by birth_date asc)A where title is not null limit 0,5;

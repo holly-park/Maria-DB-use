@@ -1,0 +1,161 @@
+inner join: 두개의 테이블을 결합할 때 교집합만 내보낸다
+            (서로 양쪽에 있는 내용만 결합)
+outer join: left or right
+
+use sqldb;
+create table stdtbl(stdname nvarchar(10) not null primary key, 
+                    addr nvarchar(20) not null);
+--프라이머리키가 필드 하나일 때는 필드 옆에다 primary key임을 기술
+--필드가 여러개일때는 모든 필드를 선언하고 별도로 primary key를 선언한다
+
+create table clubtbl(clubname nvarchar(10) not null primary key, 
+                    roomno char(4) not null);   
+
+create table stdclubtbl
+(num int auto_increment not null primary key,
+stdname nvarchar(10) not null,
+clubname nvarchar(10) not null,
+foreign key(stdname) refereces stdtbl(stdname),
+foreign key(clubname) refereces clubtbl(clubname));
+--auto_increment 설정된 필드는 primary 또는 unique만 가능하다
+
+insert into stdtbl values ('김범수', '경남'), ('성시경','서울'),
+('조용필','경기'), ('은지원','경북'), ('바비킴','서울');
+
+insert into clubtbl values ('수영', '101'), ('바둑','102'),
+('축구','103'), ('봉사','104');
+--foreign key 때문에 안지워지면:지우고 다시 데이터를 추가 
+
+
+insert into stdclubtbl values (NULL,'김범수','바둑' ), (NULL,'김범수','축구' ),
+(NULL,'조용필','축구'), (NULL,'은지원','축구'), (NULL,'은지원','봉사'),(NULL,'바비킴','봉사') ;
+
+--세개의 테이블을 join하기
+select A.stdname, A.addr, B.clubname, C.roomno
+from stdtbl A
+inner join stdclubtbl B on A.stdname=B.stdname
+inner join clubtbl C on B.clubname=C.clubname;
+
+--구매기록이 없는 회원도 출력
+select A.userid, A.name, A.addr, B.prodname
+from usertbl A
+inner join buytbl B on A.userid=B.userid;
+
+select A.userid, A.name, A.addr, B.prodname
+from usertbl A 
+left outer join buytbl B on A.userid=B.userid;
+--usertbl이 left임
+--해당 테이블에서 만약 right outer조인을 하게 되면 inner table과 동일한 결과--실익이 없다
+
+
+--구매목록 없는 회원들
+select A.userid, A.name, A.addr, B.prodname
+from buytbl B
+right outer join usertbl A on A.userid=B.userid
+where b.prodname is null;
+
+--동아리에 가입하지 않은 학생도 출력
+select A.stdname, A.addr, B.clubname, C.roomno
+from stdtbl A
+left outer join stdclubtbl B on A.stdname-B.stdname
+left outer join clubtbl C on B.clubname=C.clubname;
+
+select A.userid, prodname
+from buytbl A
+cross join usertbl B;
+
+use employees;
+select count(*) as '데이터개수'
+from employees
+cross join titles;
+
+use mydb;
+--pk추가
+--테이블의 구조 변경은 무조건 alter
+alter table emp add constraint pk_emp primary key (empno);
+
+--dept테이블에 PK_dept라는 이름으로 deptno에 primary key
+alter table dept add constraint pk_dept primary key (deptno);
+
+--emp 테이블의 deptnork dept테이블의 deptno 참조하도록 외부키 추가하기
+alter table emp add constraint fk_emp_dept foreign key (deptno) references dept(deptno);
+
+--사원번호, 사원명, 부서명, 급여 항목 출력
+select A.empno, A.ename, B.dname, A.sal
+from emp A
+inner join dept B on A.deptno=B.deptno;
+
+select empno, mgr, ename from emp;
+--emp테이블의 mgr에 자기 상사의 사원번호가 저장되어 있음
+--상사의 이름도 알고 싶음
+--empno, mgr, 상사의 이름, ename from emp
+
+A-내 사원번호, 내 이름, 상사의 사원번호
+B-상사의 이름(상사의 사원번호)
+
+select A.empno, A.ename, A.mgr, B.ename '상사'
+from emp A
+left outer join emp B on A.mgr=B.empno;
+
+--union: 사이트에서 통합검색 등을 할 때 사용
+
+use sqldb;
+create table prodtbl(id int auto_increment not null primary key,
+prodname nvarchar(20)
+);
+insert into prodtbl values (null, '전자'),(null, '섬유'), (null, '의류'), (null, '잡화'), (null, '휴대폰');
+
+--union
+select num, prodname 
+from buytbl 
+where groupname='전자'
+union all
+select id, prodname
+from prodtbl
+where prodname='전자';
+
+--테이블의 행과 열을 바꿀때도 union 을 사용한다
+
+select * from employees where empno=90000;
+처음부터 하나씩 읽어나간다. 데이터 나올때까지 (순차검색)
+데이터가 천만건이 있으면 천만번 비교해봐야 한다(속도가 너무 느림- 제일 느린 것으로 가정)
+색인순차검색 - primary key를 지정하면 인덱스를 자동으로 생성한다
+
+--회원아이디에 유니크 제약조건을 준 회원테이블 만들기
+create table member(
+    member_id int not null auto_increment primary key,
+    user_id varchar(20) unique,
+    password varchar(20) not null,
+    username varchar(20) not null
+);
+
+insert into member values(null, 'test1', '1234', '익명1');
+insert into member values(null, null, '1234', '익명2');
+insert into member values(null, 'test1', '1234', '익명3');
+
+drop table member;
+create table member(
+    member_id int not null auto_increment primary key,
+    user_id varchar(20) unique,
+    password varchar(20) not null,
+    username varchar(20) not null,
+    gender char(1) check(gender in('M', 'F'))
+);
+
+insert into member values(null, 'test1', '1234', '홍길동', 'M');
+insert into member values(null, null, '1234', '황진이', 'F');
+insert into member values(null, 'test1', '1234', '벽계수', 'Y');
+
+--member 컬럼 추가
+alter table member add column email varchar(50);
+
+--컬럼삭제
+alter table member drop column password;
+
+--열 이름 'username'을 'uname'으로 바꾸기
+alter table member change column username uname nvarchar(30);
+
+--foreign key먼저 삭제
+show indexes from buytbl;
+alter table buytbl drop foreign key buytbl;
+alter table usertbl drop primary key;

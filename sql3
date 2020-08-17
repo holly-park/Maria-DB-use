@@ -1,0 +1,299 @@
+create table testtbl(id int, username nvarchar(3), age int);
+
+insert into testtbl values(1,'tom', 12);
+insert into testtbl values(1,'jane', 12);
+insert into testtbl values(1,'홍길동', 15);
+insert into testtbl values(1,'을지문덕', 25);
+
+select*from testtbl;
+
+AUTO_INCREMENT안쓰고 자동증가 구현
+select max(id)+1 from testtbl;
+
+insert into testtbl values((select max(id)+1 from testtbl),'강감찬', 24); //에러
+
+필드를 지정할 때 최소한도로 not null 조건인 경우에는 다 기술해야 한다
+insert into testtbl(id, username) values(6,'김영아');
+
+데이터에 특수문자들 ' % _ > <  로 저장되면 불러오면 DB로 불러올때 변환해서 
+불러오고 다시 화면에 넘길 때 다시 특수문자로 저장한다.
+ nia 정보화진흥원 웹접근성
+
+'Tom''s company'
+'''myworld'''
+
+create table testtb2(id int, username nvarchar(20), age int);
+insert into testtb2 values(1, 'Tom's company', 44); ';
+insert into testtb2 values(1, 'Tom''s company', 44);
+insert into testtb2 values(2, '''myworld''', 44);
+
+primary key-unique + not null
+
+AUTO_INCREMENT가 현재 어느숫자까지 증가되었는지 확인
+
+create table test1(id int AUTO_INCREMENT primary key, text nvarchar(20));
+insert into test1 values(null, '추가1');
+insert into test1 (text) values('추가2');
+select last_insert_id();
+
+대량의 샘플 데이터 생성
+데이터베이스 전환
+use employees;
+테이블의 구조 복사(1=0인 것은 없으니까)
+create table emp as select*from employees where 1=0;
+desc emp;
+select count(*) from emp;
+
+employees테이블과 구조가 같으므로 50개의 데이터를 복사해서 insert
+insert into emp select * from employees where emp_no<=10050;
+*키 값이나 제약조건은 복사가 안된다 ex primary key, foreign key
+
+select * from emp;
+update emp set last_name='None';
+
+삭제하고 다시 복사
+delete from emp;
+insert into emp select * from employees where emp_no<=10050;
+
+update emp set hire_date='1996-06-29' where emp_no=10001;
+select * from emp emp limit 5;
+
+use sqldb;
+
+update buytbl set price = price*1.5;
+
+
+delyn이라는 새로운 필드 추가하기
+alter table buytbl add column delyn char(1);
+
+update buytbl set delyn = 'N' where num in(1,3,5,7,9);
+select * from buytbl;
+
+---그룹네임 의류->잡화로 바꾸기
+update buytbl set groupname = '잡화' where groupname = '의류';
+
+create table buy1 as select*from buytbl;
+delete from buy1 where groupname='잡화';
+delete from buy1 where delyn='NULL'; //에러. NULL값은 조건을 줄 수 없다(select도 안 먹음)
+
+--NULL은 =등호연산자 작동 안됨 -> insert
+delete from buy1 where delyn is NULL;
+select * from buy1;
+
+
+
+<트랜잭션>
+--두개 이상의 쿼리가 협력해서 하나의 결과를 만들어야 할 때
+은행거래, 예약시스템
+[우리은행 계좌에서 에서 하나은행으로 10만뭔을 보냈으면 
+하나은행 계좌는 10만원을 받았다고 기록해야 됨]
+
+취소(원상복구-rollback)  //문제가 있을 때
+확정(commit)
+
+
+MySQL - auto commit(자동확정)
+oracle - 자동확정 x
+
+트랜잭션을 이용해서 삭제내용을 복원
+start transaction;
+delete from buy1;
+select * from buy1;
+rollback;
+select * from buy1;
+
+drop table bigtab1;
+drop table bigtab3;
+create table bigtab1 select * from employees.employees;
+create table bigtab2 select * from employees.employees;
+create table bigtab3 select * from employees.employees;
+
+start transaction;
+delete from bigtab1;
+rollback;
+
+--dml 사용사다가 ddl쓰면 자동 커밋상태
+drop table bigtab2;
+truncate table bigtab3;
+
+
+show tables;
+
+select count(*) from bigtab3;
+select count(*) from bigtab1;
+
+
+
+
+--------------------------------------------------------------
+부호가 없을 때   0~255  11111111~00000000
+부호가 있을 때   2의 보수(첫번째 비트가 1이면 음수, 0이면 양수)
+                양수   00000000~01111111 0~127
+                음수   11111111~10000000 -128~-0
+       ->-128~127
+       ->2의 n-1승 ~ 2의 n-1승 -1
+
+float, double 지수형식으로 저장
+진수변환가정에서 손실이 일어나기 때문에 근사치이라고 함
+float보다 double이 손실이 적음
+--------------------------------------------------------------
+
+우리나라에서는 파일의 이름만 db에 저장하고
+파일은 db에 저장안함
+
+--------------------------------------------------------------
+
+cast(문자열 as 새로운 타입명)
+select cast('2020-08-05' as date) + 5;
+select '123' + '45';  //자동형변환
+select cast('123' as int) +5;
+
+select 'mysql' + 'is a dbms';
+select concat('mysql', 'is a dbms');
+//mssql convert
+//oracle to_char to_number to_date
+
+select if (100>299, 'true', 'false');
+
+select concat(first_name, ' ', last_name) name from employees limit 10;
+select if(delyn='N', 'no delete', 'delete') from buytbl;
+
+update weekpay set week_time=30, per_pay=3000 where week_time is null;
+
+보너스 필드 만들기
+alter table weekpay add column bonus int;
+update weekpay set bonus=30000 where id in(1,3,5,7,9);
+
+select name, ((week_time*per_pay)+bonus) as pay from weekpay;
+select name, ((week_time*per_pay)+ifnull(bonus,0)) as pay from weekpay;
+
+select nullif(100,100), nullif(200,100);
+
+선택적 분기를 할 때 사용한다
+10 마케팅부
+20 인사부
+case 필드명 when 값1 then 전달하고자하는 값1
+            when 값2 then 전달하고자하는 값2
+            . . .
+            else ' 그 밖의 처리'
+end as '새로운 필드명'
+
+select case deptno when 10 then '마케팅부'
+                   when 20 then '인사부'
+                   else '홍보부'
+        end dept from weekpay;
+
+create table test2(id int, 
+field1 nvarchar(30),
+field2 nvarchar(30),
+field3 nvarchar(30),
+field4 nvarchar(30)
+);
+insert into test2 values(1, '하나', '둘', '셋', '하나,둘,셋,넷');
+
+select elt(2, field1, field2, field3) from test2;
+select field('셋', field1, field2, field3) from test2;
+select find_in_set('둘', field4) from test2;
+
+select format(23423523, 0);
+
+select ltrim('   test'), rtrim('test    ');
+
+select substring('2020-08-06', 1,4) year,
+       substring('2020-08-06', 6,2) month,
+       substring('2020-08-06', 9,2) day;
+
+--현재날짜
+select curdate();
+select curtime();
+select sysdate();
+select now();
+
+select adddate(now(), interval 3 day);
+select adddate(now(), interval -3 day);
+select adddate(now(), interval 6 month);
+select adddate(now(), interval 3 year);
+
+-datediff
+select datediff('2020-09-01', '2020-08-05');
+select datediff('2020-08-31', '2020-08-05');
+select datediff(last_day(curdate()), curdate()) as diff;
+
+--요일 일:0 월1 화2
+select dayofweek(curdate()) as yoil;
+
+--오늘이 무슨 요일인가?
+select case dayofweek(curdate()) when 1 then '일요일'
+when 2 then '월요일'
+when 3 then '화요일'
+when 4 then '수요일'
+when 5 then '목요일'
+when 6 then '금요일'
+when 7 then '토요일'
+end as weekday;
+
+테이블과 테이블 1:1    기본정보량 장학금 주는데 필요한 정보
+                      ->테이블을 나누는게 필수적이지 않다
+                      ->컬럼수가 너무 많거나 기능적으로 보기에 나누는게 낫다고 판단할때
+               1:n    고객정보-구매정보
+                      ->무조건 나누어서 저장해야 메모리 낭비를 피한다
+               n:m    거의 발생 안함
+
+select num, userid, groupname, price, amount
+from buytbl
+
+select userid, name, addr
+from usertbl
+
+조인컬럼: usertbl
+
+select num, userid, groupname, price, amount, name, addr
+from buytbl
+inner join usertbl on buytbl.userid=usertbl.userid;
+
+select num, A.userid, groupname, price, amount, name, addr
+from buytbl A
+inner join usertbl B on A.userid=B.userid
+where A.groupname in('서적', '전자');
+
+--조인연산, 서브쿼리 연산, 사용자함수 세개다 쓸 수 있다면
+1.조인연산
+2.서브쿼리
+3.사용자함수(속도가 너무 느림)
+
+select num, A.userid, groupname, price, amount, name, addr
+from usertbl B
+inner join buytbl A on A.userid=B.userid
+order by A.userid;
+
+select distict A.userid, name, addr
+from usertbl B
+inner join buytbl A on A.userid=B.userid
+order by A.userid;
+
+--usertbl에 있는 아이디가 buytbl에 있어야 한다
+select A.userid, name, addr
+from usertbl A 
+where exists(
+    select 1 from buytbl B where A.userid=B.userid
+);
+
+select A.userid, name, addr
+from usertbl A 
+where exists(
+    select * from buytbl B where A.userid=B.userid
+);
+
+--exists구문
+서브쿼리 실행결과가 하나라도 있으면 True라고 인식하고 끝내고, 
+하나도 없으면 False라고 인식한다
+
+--distict구문은 서브쿠쿼리결과가 하나가 있어도 계속 찾는다.
+
+
+--구매 한번도 안 한 사람
+select A.userid, name, addr
+from usertbl A 
+where not exists(
+    select * from buytbl B where A.userid=B.userid
+);
